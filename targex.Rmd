@@ -1,0 +1,462 @@
+---
+title: "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;US Midterms 2022"
+# subtitle: "SUBTITLE"
+output:
+  flexdashboard::flex_dashboard:
+    theme: lumen
+    logo: wtm.png
+    orientation: columns
+    vertical_layout: fill
+runtime: shiny
+resource_files:
+- d/cb_2020_us_zcta520_500k.shp
+- d/zipcounty.rds
+- d/zip_data.rds
+- d/aggregate_zips.rds
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(tidyverse)
+library(sf)
+library(htmltools)
+library(scales)
+library(leaflet)
+library(DT)
+library(shiny)
+library(plotly)
+library(shinyalert)
+# pa_target2 <- readRDS("../crackmeta/dat()a/pa_target2.rds")
+
+the_states <- c("Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado", 
+"Connecticut", "Delaware", "Florida", "Georgia", "Hawaii", "Idaho", 
+"Illinois", "Indiana", "Iowa", "Kansas", "Kentucky", "Louisiana", 
+"Maine", "Maryland", "Massachusetts", "Michigan", "Minnesota", 
+"Mississippi", "Missouri", "Montana", "Nebraska", "Nevada", "New Hampshire", 
+"New Jersey", "New Mexico", "New York", "North Carolina", "North Dakota", 
+"Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", 
+"South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", 
+"Vermont", "Virginia", "Washington", "West Virginia", "Wisconsin", 
+"Wyoming")
+
+create_link <- function(id, pg) {
+  the_url <- paste0("https://www.facebook.com/ads/library/?active_status=all&ad_type=political_and_issue_ads&country=US&view_all_page_id=", id, "&sort_data[direction]=desc&sort_data[mode]=relevancy_monthly_grouped&search_type=page&media_type=all")
+  
+  
+  paste0("<a href='",the_url,"' target='_blank'>",pg,"</a>")
+}
+
+# dir("data", full.names = T) %>% dput()
+# sudo rm -r /srv/shiny-server/targeting_midterms2022
+# sudo mkdir /srv/shiny-server/targeting_midterms2022
+# sudo cp -R /mnt/sdb/Dropbox/phd/besides/targeting_midterms2022/* /srv/shiny-server/targeting_midterms2022
+# sudo su - -c "R -e \"install.packages('shinythemes', repos='http://cran.rstudio.com/')\""
+
+options(scipen = 999)
+```
+
+<style>
+
+
+.navbar-logo img {
+    position: absolute;
+    left: 2px;
+}
+</style>
+
+```{r}
+
+tags$style(type="text/css",
+           ".shiny-output-error { visibility: hidden; }",
+           ".shiny-output-error:before { visibility: hidden; }"
+)
+
+zipcounty <- readRDS("d/zipcounty.rds")
+zip_data <- readRDS("d/zip_data.rds")
+interest_targeting <- readRDS("d/interest_targeting.rds")
+shapename <- readRDS("d/shapename.rds")
+aggregate_zips <- readRDS("d/aggregate_zips.rds")
+region_advertisers <- readRDS("d/region_advertisers.rds")
+
+states_order <- reactive({
+  if(input$group_vs_page == "By Group"){
+    fin <- region_advertisers  %>% filter(state_name %in% input$state_select)  %>%
+      arrange(desc(`Amount spent (USD)`)) %>% 
+      drop_na() %>%
+      mutate(`Page name` = create_link(`Page ID`, `Page name`)) %>% 
+      select(-`Page ID`, -state_name) %>% 
+      mutate(left_vs_right = str_remove_all(left_vs_right, "All | Pages")) %>%
+      set_names(c("Page Name", "Political Affiliation", "Page Spend in State ($)"))
+    
+  } else if(input$group_vs_page == "Specific Page"){
+    fin <- region_advertisers %>% filter(state_name %in% input$state_select) %>% 
+      arrange(desc(`Amount spent (USD)`)) %>% 
+      drop_na(`Page name`) %>%
+      mutate(page_name = `Page name`) %>% 
+      mutate(`Page name` = create_link(`Page ID`, `Page name`)) %>% 
+      select(-`Page ID`, -left_vs_right, -state_name) %>%
+      set_names(c("Page Name", "Page Spend in State ($)", "page_name"))
+    # mutate(left_vs_right = str_remove_all(left_vs_right, "All | Pages")) 
+  } 
+  
+  return(fin)
+})
+
+
+interest_targata <- reactive({
+  
+  if(input$target_vs_exclude == "Target"){
+    interest_targeting_int <- interest_targeting %>% filter(!is_exclusion)
+  } else if(input$target_vs_exclude == "Exclusion"){
+    interest_targeting_int <- interest_targeting %>% filter(is_exclusion)
+  }
+  
+  
+  if(input$group_vs_page == "By Group"){
+    fin <- interest_targeting_int %>% 
+      filter(page_name == input$geo_select_group) %>% 
+      distinct(value, .keep_all = T) 
+  } else if(input$group_vs_page == "Specific Page"){
+    
+    fin <- interest_targeting_int %>% 
+      filter(page_name == input$geo_select) %>% 
+      distinct(value, .keep_all = T) 
+    
+  }
+  
+  return(fin)
+  
+})
+
+
+geo_dat <- reactive({
+  
+  # print(input$target_vs_exclude)
+  
+  if(input$target_vs_exclude == "Target"){
+    zip_data_int <- state_dat() %>% filter(!is_exclusion)
+  } else if(input$target_vs_exclude == "Exclusion"){
+    zip_data_int <- state_dat() %>% filter(is_exclusion)
+  }
+  
+  
+  if(input$group_vs_page == "By Group"){
+    
+    fin <- shapename %>% 
+      filter(ZCTA5CE20 %in% (zipcounty %>% filter(state_name %in% input$state_select) %>% .$zcta))  %>%
+      rename(zcta = ZCTA5CE20) %>% 
+      left_join(zip_data_int %>% filter(advertiser_type == input$geo_select_group))  
+    
+    
+  } else if (input$group_vs_page == "Specific Page"){
+    
+    fin <- shapename %>% 
+      filter(ZCTA5CE20 %in% (zipcounty %>% filter(state_name %in% input$state_select) %>% .$zcta))  %>%
+      rename(zcta = ZCTA5CE20) %>% 
+      left_join(zip_data_int %>% filter(page_name == input$geo_select))   
+    
+  }
+  
+  return(fin)
+  
+  
+})
+
+
+observe({
+
+shinyalert(
+    title = "Welcome to the US 2022 Midterms Targeting Dashboard",
+    text = "This dashboard aggregates data from the Meta Ad Library to show how citizens are targeted during the US 2022 election.\n\nNOTE: Some visualizations might be slow to load. Please allow some time for that.",
+    size = "m",
+    closeOnEsc = TRUE,
+    closeOnClickOutside = TRUE,
+    html = FALSE,
+    # type = "info",
+    showConfirmButton = TRUE,
+    showCancelButton = FALSE,
+    confirmButtonText = "OK",
+    confirmButtonCol = "#AEDEF4",
+    timer = 0,
+    imageUrl = "https://is1-ssl.mzstatic.com/image/thumb/Purple124/v4/a2/f0/ff/a2f0fff2-757b-074a-d208-38de824d7b07/AppIcon-85-220-2x.png/230x0w.webp",
+    animation = TRUE
+  )
+})
+
+
+
+```
+
+  
+
+Sidebar {.sidebar}
+=======================================================================
+
+### Settings
+
+```{r, context = "server"}
+  shiny::selectInput(
+    inputId = 'target_select',
+    label = 'Select Targeting Option',
+    choices = c("Location", "Detailed"),
+    selectize = F,
+    selected = "Location",
+    multiple = F
+  )
+
+
+
+
+output$state_selector <-  shiny::renderUI({
+
+  if(input$target_select == "Location"){
+  shiny::selectInput(
+    inputId = 'state_select',
+    label = 'Select State',
+    choices = the_states,
+    selectize = F,
+    selected = "Pennsylvania",
+    multiple = F
+  )
+  }
+})
+
+output$group_vs_pager <-  shiny::renderUI({
+
+  # if(input$target_select != "Location"){
+    shiny::radioButtons("group_vs_page", label = "Choose Page(s)", selected = "By Group", choices = c("By Group", "Specific Page"))
+  # }
+
+
+})
+
+
+
+
+state_dat <- shiny::reactive({
+  
+  
+  if(input$group_vs_page == "By Group"){
+    fin <- aggregate_zips  %>% filter(state_name %in% input$state_select)
+  } else if(input$group_vs_page == "Specific Page"){
+    fin <- zip_data %>% filter(state_name %in% input$state_select)
+  }
+  
+  return(fin)
+  
+})
+
+
+
+  
+output$geo_selector <-  shiny::renderUI({
+  if(input$group_vs_page == "By Group"){
+    
+            shiny::selectInput(
+      inputId = 'geo_select_group',
+      label = 'Select Page Group',
+      choices = c("All Pro-Republican Pages", "All Pro-Democrat Pages"),
+      selected = "All Pro-Democrat Pages",
+      multiple = F#, # allow for multiple inputs
+
+        )    
+ 
+  } else if(input$group_vs_page == "Specific Page"){
+    
+      if(input$target_select == "Location"){
+       the_choices <- states_order()$page_name 
+      } else if (input$target_select == "Detailed"){
+        the_choices <-  interest_targeting %>% 
+          arrange(-total_spend) %>% 
+          .$page_name %>% 
+          unique() %>% 
+          setdiff(c("All Pro-Republican Pages", "All Pro-Democrat Pages"))
+      }
+    
+            shiny::selectInput(
+      inputId = 'geo_select',
+      label = 'Select Page',
+      choices = the_choices,
+      selected = the_choices[1],
+      multiple = F#, # allow for multiple inputs
+
+        )   
+    
+    
+  }
+})
+
+output$target_vs_excluder <-  shiny::renderUI({
+  # if(input$group_vs_page == "Location"){
+    shiny::radioButtons("target_vs_exclude", label = "Target vs. Exclusion", selected = "Target", choices = c("Target", "Exclusion"))
+
+  # }
+})
+
+
+output$tttt <- shiny::renderText('No data recorded.')
+
+output$plotlyyyy <-plotly::renderPlotly({
+  
+  
+  the_plot <- interest_targata() %>% 
+    slice(1:50) %>% 
+    mutate(target = fct_reorder(value, total_spend)) %>% 
+    ggplot(aes(target, total_spend, fill = detailed_type)) +
+    geom_col() +
+    coord_flip()    +
+    scale_y_continuous(labels = comma)
+      
+
+  
+  plotly::ggplotly(the_plot)
+})
+
+output$leafy <- leaflet::renderLeaflet({
+
+
+labels <- sprintf(
+  "<strong>%s</strong><br/>  Spend ($): %s",
+  paste0("ZIP CODE: ", geo_dat()$NAME20), ifelse(is.na(comma(geo_dat()$total_spend)), "No Spending Recorded", comma(round(geo_dat()$total_spend)))) %>%
+  lapply(HTML)
+
+pal <- colorNumeric(
+  palette = "GnBu",
+  domain = geo_dat()$total_spend)
+
+factop <- function(x) {
+  ifelse(is.na(x), 0.1, 0.7)
+}
+
+leaflet(geo_dat()) %>%
+  addProviderTiles("Stamen.TonerLite")%>%
+  addPolygons(
+    # fill
+    fillColor   = ~pal(total_spend),
+    fillOpacity = ~factop(total_spend),
+    # line
+    dashArray   = "3",
+    weight      = 2,
+    color       = "grey",
+    opacity     = 0,
+    # interaction
+    highlight = highlightOptions(
+      weight = 5,
+      color = "black",
+      dashArray = "",
+      opacity     = 0.1,
+      fillOpacity = 0.7,
+      bringToFront = TRUE),
+  label = labels,
+  labelOptions = labelOptions(
+    style = list("font-weight" = "normal", padding = "3px 8px"),
+    textsize = "15px",
+    direction = "auto")) %>%
+  addLegend(
+    pal = pal, values = ~total_spend, opacity = 0.7, title = HTML("Spend ($)"),
+    position = "bottomright")
+})
+
+  output$plots <- renderUI({
+    
+    # print(geo_dat()$total_spend)
+    
+    if(input$target_select == "Location"){
+      if(!all(is.na(geo_dat()$total_spend))){
+        
+        leaflet::leafletOutput('leafy')
+        
+      } else if(all(is.na(geo_dat()$total_spend))){
+        shiny::htmlOutput("tttt")
+      }       
+    } else if(input$target_select == "Detailed"){
+      plotly::plotlyOutput("plotlyyyy")
+    } 
+  })
+
+  
+
+
+# saveRDS(shapename, file = "d//shapename.rds")
+```
+
+
+
+```{r}
+# uiOutput("page_selector")
+uiOutput("state_selector")
+uiOutput("group_vs_pager")
+
+uiOutput("geo_selector")
+
+uiOutput("target_vs_excluder")
+
+
+br()
+br()
+br()
+br()
+br()
+br()
+HTML("Data: Meta Ad Library.")
+br()
+HTML("August 6th - November 4th 2022")
+br()
+br()
+HTML("Contact: Fabio Votta (@favstats):<br>f.a.votta@uva.nl")
+
+
+
+
+```
+
+
+Targeting Dashboard
+=======================================================================
+
+Column {.tabset}
+-------------------------------------
+    
+### Chart
+
+```{r}
+uiOutput("plots")
+```
+
+
+    
+### Details
+
+```{r}
+
+
+DT::renderDataTable({
+  # geo_dat() %>% select( , total_spend)
+  
+  if(input$target_select == "Location"){
+    
+     DT::datatable(states_order() %>% select(-contains("page_name")), escape = FALSE, options = list(pageLength = 50)) %>% formatRound("Page Spend in State ($)", digits=0) %>% formatCurrency("Page Spend in State ($)", currency="$")
+  
+    
+  } else if(input$target_select == "Detailed"){
+    
+  #   
+    fin <- interest_targeting %>% select(-contains("detailed_type")) %>% 
+      filter(total_spend >= 1000) %>% 
+        mutate(page_name = ifelse(page_name %in% c("All Pro-Democrat Pages", "All Pro-Republican Pages"), page_name, create_link(page_id, page_name))) %>% 
+        select(-page_id) %>% 
+        set_names(c("Pages", "Target", "Audience Excluded", "Spend ($)"))
+  # } 
+    
+      DT::datatable(fin, escape = FALSE, options = list(pageLength = 50)) %>% formatRound("Spend ($)", digits=0) %>% formatCurrency("Spend ($)", currency="$")
+    
+  }
+  
+  
+ 
+})
+
+
+
+
+```
