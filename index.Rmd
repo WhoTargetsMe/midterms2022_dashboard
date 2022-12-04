@@ -71,23 +71,23 @@ runoff30 <- readRDS("data/runoff.rds")  %>%
 
 ## Methodology
 
-We annotated over 3000 US political advertisers during the 2022 Midterms to try and better understand how campaigns are targeting their ads on Meta platforms (which include Facebook and Instagram). The data source is the [Meta Ad Library](https://www.facebook.com/ads/library/), most of it taken from the new Audience Tab which shows how much money parties spend on audiences.
+We coded over 3,000 US political advertisers during the 2022 midterm campaigns to better understand how campaigns use different targeting methods made available by Meta. To do this, we used data from the [Meta Ad Library](https://www.facebook.com/ads/library/), most often the new 'Audience' data which gives some detail on how pages target their ads.
 
-**Here we zoom in on the Georgia Senate runoff race** by only keeping advertisers who:
+To better understand the Georgia runoff election, we kept only advertisers who:
 
-1. advertised in the last 7 days (Nov 25th - 1st December 2022)
-2. advertised in the last 30 days (Nov 2nd - 1st December 2022) but only if they spend any money on the state of Georgia
+1. Advertised in the last 7 days (Nov 25th - 1st December 2022)
+2. Advertised in the last 30 days (Nov 2nd - 1st December 2022) and spent money in Georgia.
 
-> Note: Meta only provides 7, 30 and 90 days window for this data and their data lags behind. We will update the report as soon as new data is available. 
-
-
+> Note: Meta only provides 7, 30 and 90 days windows for the targeting data in their Ad Library. Meta's data also lags by a few days. We will update this report as soon as new data is available. 
 
 
 
 
-## Overall Stats  {.tabset .tabset-fade .tabset-pills}
 
-First, some overall statistics. Pro-Democrat pages are clearly and consistently outspending pro-Republican pages. Also in terms of volume, Pro-Democrat pages run considerably more ads.
+
+## Topline statistics  {.tabset .tabset-fade .tabset-pills}
+
+First, Democrat (Warnock)-supporting pages are clearly and consistently outspending Replubican (Walker)-supporting pages. Democrat-supporting pages have also run many more ads.
 
 
 ### Nov 25th - 1st December 2022 (Last 7 Days)
@@ -208,10 +208,12 @@ runoff30 %>%
 
 
 
-## Spending per Targeting Criteria  {.tabset .tabset-fade .tabset-pills}
+## Spending, broken down by targeting method  {.tabset .tabset-fade .tabset-pills}
 
 
-How much Money did Campaigns Spend on Targeting Criteria? This graph shows in percent how much of their budget Pro-Democrat and Pro-Republican pages have spent on each targeting criterion. **Notably, most advertisers spend the vast majority of their budget (~65%+) on custom audiences**, which include custom E-mail lists uploaded by the advertisers.
+How much did campaigns spend on different targeting methods? 
+
+**Note that most advertisers spend the vast majority of their budget (~65%+) on Meta's Custom Audiences.**
 
 ### Nov 25th - 1st December 2022 (Last 7 Days)
 
@@ -261,9 +263,9 @@ runoff_spend_reps %>%
              aes(y = perc + 3, label = paste0(round(perc, 1), "%"), group = party),
              position = position_dodge(width = 0.9)) +
   theme(legend.position = "bottom") +
-  labs(x = "", y = "\nBudget Spend on Targeting Criterias (in % of Total Budget)", caption = "Source: Meta Ad Library and data compiled by Who Targets Me. Data Viz: Fabio Votta (@favstats).")#,
-       # title = "How much Money did Campaigns Spend on Targeting Criteria?",
-       # subtitle = "Time Range: Nov 25th - 1st December 2022 (Last 7 Days)")
+  labs(x = "", y = "\nBudget spent on targeting method (% of Total spend)", caption = "Source: Meta Ad Library using data compiled by Who Targets Me. Data Viz: Fabio Votta (@favstats).")#,
+       # title = "How much did campaigns spend on particular targeting methods?",
+       # subtitle = "Period: Nov 25th - 1st December 2022 (Last 7 Days)")
 
 ```
 
@@ -275,9 +277,9 @@ runoff30_spend_reps <- calculate_spend_on_each(runoff30 %>% filter(internal_id %
 runoff30_spend_dems <- calculate_spend_on_each(runoff30 %>% filter(internal_id %in% pro_dems$page_id))
 
 runoff30_spend_reps %>% 
-  mutate(party= "Pro-Republican Pages") %>% 
+  mutate(party= "Republican-supporting pages") %>% 
   bind_rows(runoff30_spend_dems %>% 
-  mutate(party= "Pro-Democrat Pages")) %>% 
+  mutate(party= "Democrat-supporting pages")) %>% 
   filter(perc >= 0.1) %>%
   add_count(target) %>% 
   filter(n == 2) %>% 
@@ -313,7 +315,7 @@ runoff30_spend_reps %>%
 
 ## Top Contested (Interest) Audiences  {.tabset .tabset-fade .tabset-pills}
 
-Here, we show the *top most contested interest audiences*, i.e. where both Democrats and Republicans have spend considerable amounts of money.
+Here, we show the *top most contested interest audiences*, i.e. where both Democrats and Republicans have spent considerable amounts of money competing to reach voters with the same interests.
 
 ### Nov 25th - 1st December 2022 (Last 7 Days)
 
@@ -325,7 +327,7 @@ interest_targeting <- readRDS("runoff7/interest_targeting.rds")
 
 ```{r}
 contested_dat <- interest_targeting %>% 
-  filter(page_name %in% c("All Pro-Democrat Pages", "All Pro-Republican Pages")) %>% 
+  filter(page_name %in% c("All Democrat-supporting pages", "All Republican-supporting pages")) %>% 
   filter(!is_exclusion) %>% 
   # filter(total_spend >= 40000) %>% 
   filter(total_spend >= 500) %>%
@@ -339,14 +341,14 @@ contested_dat <- interest_targeting %>%
 
 
 the_order <- contested_dat %>% 
-  filter(page_name == "All Pro-Republican Pages") %>% 
+  filter(page_name == "All Republican-supporting pages") %>% 
   arrange(desc(perc)) %>% 
   pull(value) %>% 
   unique()
 
 lab_dat <- contested_dat %>% 
   # distinct(value, .keep_all = T) %>% 
-  filter(page_name == "All Pro-Republican Pages") %>% 
+  filter(page_name == "All Republican-supporting pages") %>% 
   mutate(labb = paste0("$", scales::comma(round(total_spenderino)))) %>% 
   select(page_name, value, labb)
 
@@ -358,7 +360,7 @@ contested_dat %>%
   # mutate(the_order = )
   left_join(lab_dat) %>% 
   mutate(value = factor(value, the_order)) %>% 
-  mutate(page_name = factor(page_name, c("All Pro-Republican Pages", "All Pro-Democrat Pages"))) %>% 
+  mutate(page_name = factor(page_name, c("All Republican-supporting pages", "All Democrat-supporting pages"))) %>% 
   # filter()
   ggplot(aes(value, perc)) +
   geom_col(aes(fill = page_name), position = position_stack(), alpha = 0.8) +
@@ -371,7 +373,7 @@ contested_dat %>%
   scale_y_continuous(labels = scales::percent, breaks = c(0, 0.25, 0.5, 0.75, 1)) +
   scale_fill_manual("Page Groups", values = c("#ff2700", "#008fd5")) +
   ggthemes::theme_hc() +
-  labs(x = "Targeting Criteria", y = "% of Budget Spend on Targeting Criteria", #title = "Most Contested Target Audiences in US 2022 Midterms", subtitle = " ", 
+  labs(x = "Targeting criteria", y = "% of budget spent on targeting method", #title = "Contested targeted interests (US midterms 2022)", subtitle = " ", 
        caption = "Source: Meta Ad Library and data compiled by Who Targets Me. Data Viz: Fabio Votta (@favstats).") +
   theme(legend.position = "bottom", plot.title = element_text(size = 28, face = "bold", hjust = 1.25), text=element_text(family="mono"), plot.caption = element_text(hjust = -1.7))
 
@@ -388,7 +390,7 @@ interest_targeting30 <- readRDS("runoff/interest_targeting.rds")
 
 ```{r}
 contested_dat <- interest_targeting30 %>% 
-  filter(page_name %in% c("All Pro-Democrat Pages", "All Pro-Republican Pages")) %>% 
+  filter(page_name %in% c("All Democrat-supporting pages", "All Republican-supporting pages")) %>% 
   filter(!is_exclusion) %>% 
   filter(total_spend >= 10000) %>%
   # filter(total_spend >= 500) %>%
@@ -402,14 +404,14 @@ contested_dat <- interest_targeting30 %>%
 
 
 the_order <- contested_dat %>% 
-  filter(page_name == "All Pro-Republican Pages") %>% 
+  filter(page_name == "All Republican-supporting pages") %>% 
   arrange(desc(perc)) %>% 
   pull(value) %>% 
   unique()
 
 lab_dat <- contested_dat %>% 
   # distinct(value, .keep_all = T) %>% 
-  filter(page_name == "All Pro-Republican Pages") %>% 
+  filter(page_name == "All Republican-supporting pages") %>% 
   mutate(labb = paste0("$", scales::comma(round(total_spenderino)))) %>% 
   select(page_name, value, labb)
 
@@ -421,7 +423,7 @@ contested_dat %>%
   # mutate(the_order = )
   left_join(lab_dat) %>% 
   mutate(value = factor(value, the_order)) %>% 
-  mutate(page_name = factor(page_name, c("All Pro-Republican Pages", "All Pro-Democrat Pages"))) %>% 
+  mutate(page_name = factor(page_name, c("All Republican-supporting pagess", "All Democrat-supporting pages"))) %>% 
   # filter()
   ggplot(aes(value, perc)) +
   geom_col(aes(fill = page_name), position = position_stack(), alpha = 0.8) +
@@ -434,7 +436,7 @@ contested_dat %>%
   scale_y_continuous(labels = scales::percent, breaks = c(0, 0.25, 0.5, 0.75, 1)) +
   scale_fill_manual("Page Groups", values = c("#ff2700", "#008fd5")) +
   ggthemes::theme_hc() +
-  labs(x = "Targeting Criteria", y = "% of Budget Spend on Targeting Criteria", #title = "Most Contested Target Audiences in US 2022 Midterms", subtitle = " ", 
+  labs(x = "Targeting Criteria", y = "% of budget spent on targeting method", #title = "Contested targeted interests (US midterms 2022)", subtitle = " ", 
        caption = "Source: Meta Ad Library and data compiled by Who Targets Me. Data Viz: Fabio Votta (@favstats).") +
   theme(legend.position = "bottom", plot.title = element_text(size = 28, face = "bold", hjust = 1.2), text=element_text(family="mono"), plot.caption = element_text(hjust = -1.7))
 
@@ -443,7 +445,7 @@ contested_dat %>%
 
 ## Top Excluded Interests  {.tabset .tabset-fade .tabset-pills}
 
-On Meta, advertisers can also **pay to exclude certain audiences**. The graph below shows which audiences are being **excluded** (i.e. how much money advertisers spend on ads that exclude audiences). Interestingly, Pro-Democrat pages seem to both include and exclude likely conservative leaning audiences (*NASCAR*, *Hunting*). Pro-Republican pages exclude people interested in *Veganism* and *Toyota Prius*. 
+On Meta, advertisers can also **choose to exclude certain audiences from seeing their ads**. The graph below shows which audiences are being **excluded** and how much pages are paying for ads that exclude them. Interestingly, Democrat-supporting pages seem to both include and exclude likely conservative leaning audiences (*NASCAR*, *Hunting*). Pro-Republican pages exclude people interested in *Veganism* and *Toyota Prius*. 
 
 ### Nov 25th - 1st December 2022 (Last 7 Days)
 
@@ -463,7 +465,7 @@ interest_targeting %>%
   ggthemes::theme_hc() +
   theme(legend.position = "none") +
   scale_y_continuous(labels = scales::comma) +
-  labs(x = "Interest Exlcusion", y = "\nTotal Money Spend on Excluding Audiences (in $)", 
+  labs(x = "Interest Exlcusion", y = "\nTotal spent on ads that exclude audience (in $)", 
        caption = "Source: Meta Ad Library and data compiled by Who Targets Me. Data Viz: Fabio Votta (@favstats).")
 ```
 
@@ -488,18 +490,18 @@ interest_targeting30 %>%
   ggthemes::theme_hc() +
   theme(legend.position = "none") +
   scale_y_continuous(labels = scales::comma) +
-  labs(x = "Interest Exlcusion", y = "\nTotal Money Spend on Excluding Audiences (in $)", 
+  labs(x = "Interest Exlcusion", y = "\nTotal spent excluding audiences (in $)", 
        caption = "Source: Meta Ad Library and data compiled by Who Targets Me. Data Viz: Fabio Votta (@favstats).")
 ```
 
 
 ## ZIP Code Targeting  {.tabset .tabset-fade .tabset-pills}
 
-Both Pro-Democrat and Pro-Republican pages **target voters in and around cities**, most notably Atlanta. 
+Both Democrat-supporting and Republican-supporting pages **target voters in and around cities**, most notably Atlanta. 
 
 ### Nov 25th - 1st December 2022 (Last 7 Days)  {.tabset .tabset-fade .tabset-pills}
 
-#### Pro-Democrat Pages
+#### Democrat-supporting pages
 
 
 ```{r}
@@ -527,7 +529,7 @@ create_geo_dat(aggregate_zips,
   leafletter()
 ```
 
-#### Pro-Republican Pages
+#### Republican-supporting pages
 
 ```{r}
 create_geo_dat(aggregate_zips, 
@@ -542,7 +544,7 @@ create_geo_dat(aggregate_zips,
 
 ### Nov 2nd - 1st December 2022 (Last 30 Days) {.tabset .tabset-fade .tabset-pills}
 
-#### Pro-Democrat Pages 
+#### Democrat-supporting pages
 
 
 ```{r}
@@ -568,7 +570,7 @@ create_geo_dat(aggregate_zips30,
 
 
 
-#### Pro-Republican Pages
+#### Republican-supporting pages
 
 ```{r}
 create_geo_dat(aggregate_zips30, 
@@ -583,9 +585,9 @@ create_geo_dat(aggregate_zips30,
 
 
 
-## Gender Targeting {.tabset .tabset-fade .tabset-pills}
+## How the parties use gender to target ads {.tabset .tabset-fade .tabset-pills}
 
-**Pro-Democrat pages spend much more money on targeting Women** compared to Pro-Republican pages, even compared to the overall lower budget of Pro-Republican pages.
+**Democrat-supporting pages spend more money targeting ads at women** versus Republican-supporting pages, even factoring in their lower budget.
 
 ### Nov 25th - 1st December 2022 (Last 7 Days)  
 
@@ -601,7 +603,7 @@ gender_targeting %>%
   geom_col(position = position_dodge())  +
   scale_fill_manual("Page Groups", values = c("#008fd5", "#ff2700")) +
   ggthemes::theme_hc() +
-  labs(x = "Targeting Criteria", y = "Budget Spend on Gender Criteria", #title = "Most Contested Target Audiences in US 2022 Midterms", subtitle = " ", 
+  labs(x = "Targeting criteria", y = "Amount spent on targeting by gender", #title = "Most Contested Target Audiences in US 2022 Midterms", subtitle = " ", 
        caption = "Source: Meta Ad Library and data compiled by Who Targets Me. Data Viz: Fabio Votta (@favstats).") +
   geom_text(aes(y = total_spend + 1000, label = paste0("$", scales::comma(round(total_spend)))), position = position_dodge(width = 0.9))
 ```
@@ -622,14 +624,14 @@ gender_targeting30 %>%
   geom_col(position = position_dodge())  +
   scale_fill_manual("Page Groups", values = c("#008fd5", "#ff2700")) +
   ggthemes::theme_hc() +
-  labs(x = "", y = "Budget Spend on Gender Targeting", #title = "Most Contested Target Audiences in US 2022 Midterms", subtitle = " ", 
+  labs(x = "", y = "Amount spent on targeting by gender", #title = "Most Contested Target Audiences in US 2022 Midterms", subtitle = " ", 
        caption = "Source: Meta Ad Library and data compiled by Who Targets Me. Data Viz: Fabio Votta (@favstats).") +
   geom_text(aes(y = total_spend + 50000, label = paste0("$", scales::comma(round(total_spend)))), position = position_dodge(width = 0.9))
 ```
 
 ## Language Targeting {.tabset .tabset-fade .tabset-pills}
 
-Both Pro-Democrat and Pro-Republican pages run ads targeted at English-speakers. However, Pro-Democrat pages spend a lot of money on reaching out to Spanish speakers, much more than Republicans.
+Both Democrat and Republican ads spent most money on ads targeted at English-speakers. Democratic pages targeted spanish-speaking voters at a much higher rate.
 
 
 ### Nov 25th - 1st December 2022 (Last 7 Days)  
@@ -648,7 +650,7 @@ language_targeting %>%
   geom_col(position = position_dodge())  +
   scale_fill_manual("Page Groups", values = c("#008fd5", "#ff2700")) +
   ggthemes::theme_hc() +
-  labs(x = "", y = "Budget Spend on Language Targeting", #title = "Most Contested Target Audiences in US 2022 Midterms", subtitle = " ", 
+  labs(x = "", y = "Total spent targeting by language", #title = "Most Contested Target Audiences in US 2022 Midterms", subtitle = " ", 
        caption = "Source: Meta Ad Library and data compiled by Who Targets Me. Data Viz: Fabio Votta (@favstats).") +
   geom_text(aes(y = total_spend + 1000, label = paste0("$", scales::comma(round(total_spend)))), position = position_dodge(width = 0.9))
 ```
@@ -670,7 +672,7 @@ language_targeting30 %>%
   geom_col(position = position_dodge())  +
   scale_fill_manual("Page Groups", values = c("#008fd5", "#ff2700")) +
   ggthemes::theme_hc() +
-  labs(x = "", y = "Budget Spend on Language Targeting", #title = "Most Contested Target Audiences in US 2022 Midterms", subtitle = " ", 
+  labs(x = "", y = "Total spent targeting by language", #title = "Most Contested Target Audiences in US 2022 Midterms", subtitle = " ", 
        caption = "Source: Meta Ad Library and data compiled by Who Targets Me. Data Viz: Fabio Votta (@favstats).") +
   geom_text(aes(y = total_spend + 25000, label = paste0("$", scales::comma(round(total_spend)))), position = position_dodge(width = 0.9))
 ```
