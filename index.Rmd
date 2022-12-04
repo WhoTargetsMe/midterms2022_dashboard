@@ -75,8 +75,8 @@ We annotated over 3000 US political advertisers during the 2022 Midterms to try 
 
 **Here we zoom in on the Georgia Senate runoff race** by only keeping advertisers who:
 
-1. advertised in the last 7 days (Nov 21st - Nov 27th 2022)
-2. advertised in the last 30 days (Oct 29th - Nov 27th 2022) but only if they spend any money on the state of Georgia
+1. advertised in the last 7 days (Nov 25th - 1st December 2022)
+2. advertised in the last 30 days (Nov 2nd - 1st December 2022) but only if they spend any money on the state of Georgia
 
 > Note: Meta only provides 7, 30 and 90 days window for this data and their data lags behind. We will update the report as soon as new data is available. 
 
@@ -90,7 +90,7 @@ We annotated over 3000 US political advertisers during the 2022 Midterms to try 
 First, some overall statistics. Pro-Democrat pages are clearly and consistently outspending pro-Republican pages. Also in terms of volume, Pro-Democrat pages run considerably more ads.
 
 
-### Nov 21st - Nov 27th 2022 (Last 7 Days)
+### Nov 25th - 1st December 2022 (Last 7 Days)
 
 ```{r}
 runoff %>% 
@@ -148,7 +148,7 @@ runoff %>%
   fmt_markdown(columns = everything())
 ```
 
-### Oct 29th - Nov 27th 2022 (Last 30 Days)
+### Nov 2nd - 1st December 2022 (Last 30 Days)
 
 ```{r}
 runoff30 %>% 
@@ -213,7 +213,7 @@ runoff30 %>%
 
 How much Money did Campaigns Spend on Targeting Criteria? This graph shows in percent how much of their budget Pro-Democrat and Pro-Republican pages have spent on each targeting criterion. **Notably, most advertisers spend the vast majority of their budget (~65%+) on custom audiences**, which include custom E-mail lists uploaded by the advertisers.
 
-### Nov 21st - Nov 27th 2022 (Last 7 Days)
+### Nov 25th - 1st December 2022 (Last 7 Days)
 
 
 ```{r}
@@ -263,11 +263,11 @@ runoff_spend_reps %>%
   theme(legend.position = "bottom") +
   labs(x = "", y = "\nBudget Spend on Targeting Criterias (in % of Total Budget)", caption = "Source: Meta Ad Library and data compiled by Who Targets Me. Data Viz: Fabio Votta (@favstats).")#,
        # title = "How much Money did Campaigns Spend on Targeting Criteria?",
-       # subtitle = "Time Range: Nov 21st - Nov 27th 2022 (Last 7 Days)")
+       # subtitle = "Time Range: Nov 25th - 1st December 2022 (Last 7 Days)")
 
 ```
 
-### Oct 29th - Nov 27th 2022 (Last 30 Days)
+### Nov 2nd - 1st December 2022 (Last 30 Days)
 
 ```{r}
 runoff30_spend_reps <- calculate_spend_on_each(runoff30 %>% filter(internal_id %in% pro_reps$page_id))
@@ -313,9 +313,9 @@ runoff30_spend_reps %>%
 
 ## Top Contested (Interest) Audiences  {.tabset .tabset-fade .tabset-pills}
 
-Here, we show the *top most contested interest audiences*, i.e. where both Democrats and Republicans have spend considerable amounts of money. Notably, **in the last 7 days** pro-Democrat pages seem to have targeted more traditionally conservative audiences (people interested in *NASCAR*, *Fishing*, and *Hunting*). **In the 30 days window**, we can see that overall Republicans have focused on audiences interested in *College Football* and *Small Business owners*.
+Here, we show the *top most contested interest audiences*, i.e. where both Democrats and Republicans have spend considerable amounts of money.
 
-### Nov 21st - Nov 27th 2022 (Last 7 Days)
+### Nov 25th - 1st December 2022 (Last 7 Days)
 
 
 ```{r}
@@ -373,13 +373,13 @@ contested_dat %>%
   ggthemes::theme_hc() +
   labs(x = "Targeting Criteria", y = "% of Budget Spend on Targeting Criteria", #title = "Most Contested Target Audiences in US 2022 Midterms", subtitle = " ", 
        caption = "Source: Meta Ad Library and data compiled by Who Targets Me. Data Viz: Fabio Votta (@favstats).") +
-  theme(legend.position = "bottom", plot.title = element_text(size = 28, face = "bold", hjust = 1.2), text=element_text(family="mono"), plot.caption = element_text(hjust = -1.7))
+  theme(legend.position = "bottom", plot.title = element_text(size = 28, face = "bold", hjust = 1.25), text=element_text(family="mono"), plot.caption = element_text(hjust = -1.7))
 
 
 ```
 
 
-### Oct 29th - Nov 27th 2022 (Last 30 Days)
+### Nov 2nd - 1st December 2022 (Last 30 Days)
 
 ```{r}
 interest_targeting30 <- readRDS("runoff/interest_targeting.rds")
@@ -416,7 +416,7 @@ lab_dat <- contested_dat %>%
 
 ```
 
-```{r, fig.height=10}
+```{r, fig.height=12}
 contested_dat %>% 
   # mutate(the_order = )
   left_join(lab_dat) %>% 
@@ -445,7 +445,7 @@ contested_dat %>%
 
 On Meta, advertisers can also **pay to exclude certain audiences**. The graph below shows which audiences are being **excluded** (i.e. how much money advertisers spend on ads that exclude audiences). Interestingly, Pro-Democrat pages seem to both include and exclude likely conservative leaning audiences (*NASCAR*, *Hunting*). Pro-Republican pages exclude people interested in *Veganism* and *Toyota Prius*. 
 
-### Nov 21st - Nov 27th 2022 (Last 7 Days)
+### Nov 25th - 1st December 2022 (Last 7 Days)
 
 ```{r, fig.width=10}
 interest_targeting %>% 
@@ -468,7 +468,7 @@ interest_targeting %>%
 ```
 
 
-### Oct 29th - Nov 27th 2022 (Last 30 Days)
+### Nov 2nd - 1st December 2022 (Last 30 Days)
 
 ```{r}
 
@@ -497,7 +497,7 @@ interest_targeting30 %>%
 
 Both Pro-Democrat and Pro-Republican pages **target voters in and around cities**, most notably Atlanta. 
 
-### Nov 21st - Nov 27th 2022 (Last 7 Days)  {.tabset .tabset-fade .tabset-pills}
+### Nov 25th - 1st December 2022 (Last 7 Days)  {.tabset .tabset-fade .tabset-pills}
 
 #### Pro-Democrat Pages
 
@@ -540,7 +540,7 @@ create_geo_dat(aggregate_zips,
 ```
 
 
-### Oct 29th - Nov 27th 2022 (Last 30 Days) {.tabset .tabset-fade .tabset-pills}
+### Nov 2nd - 1st December 2022 (Last 30 Days) {.tabset .tabset-fade .tabset-pills}
 
 #### Pro-Democrat Pages 
 
@@ -587,7 +587,7 @@ create_geo_dat(aggregate_zips30,
 
 **Pro-Democrat pages spend much more money on targeting Women** compared to Pro-Republican pages, even compared to the overall lower budget of Pro-Republican pages.
 
-### Nov 21st - Nov 27th 2022 (Last 7 Days)  
+### Nov 25th - 1st December 2022 (Last 7 Days)  
 
 ```{r}
 gender_targeting <- readRDS("runoff7/gender_targeting.rds")
@@ -607,7 +607,7 @@ gender_targeting %>%
 ```
 
 
-### Oct 29th - Nov 27th 2022 (Last 30 Days) 
+### Nov 2nd - 1st December 2022 (Last 30 Days) 
 
 
 ```{r}
@@ -632,7 +632,7 @@ gender_targeting30 %>%
 Both Pro-Democrat and Pro-Republican pages run ads targeted at English-speakers. However, Pro-Democrat pages spend a lot of money on reaching out to Spanish speakers, much more than Republicans.
 
 
-### Nov 21st - Nov 27th 2022 (Last 7 Days)  
+### Nov 25th - 1st December 2022 (Last 7 Days)  
 
 ```{r}
 language_targeting <- readRDS("runoff7/language_targeting.rds")
@@ -643,6 +643,7 @@ language_targeting %>%
       group_by(left_vs_right, value) %>% 
   summarise(total_spend = sum(total_spend)) %>% 
   drop_na() %>% 
+    filter(total_spend >= 1000) %>% 
   ggplot(aes(value, total_spend, fill = left_vs_right)) +
   geom_col(position = position_dodge())  +
   scale_fill_manual("Page Groups", values = c("#008fd5", "#ff2700")) +
@@ -652,7 +653,7 @@ language_targeting %>%
   geom_text(aes(y = total_spend + 1000, label = paste0("$", scales::comma(round(total_spend)))), position = position_dodge(width = 0.9))
 ```
 
-### Oct 29th - Nov 27th 2022 (Last 30 Days) 
+### Nov 2nd - 1st December 2022 (Last 30 Days) 
 
 
 ```{r}
