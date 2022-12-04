@@ -33,7 +33,7 @@ options(scipen = 999)
 source("helpers.R")
 
 # pro_reps <- us_advertisers %>% 
-#   filter(left_vs_right == "All Pro-Republican Pages")
+#   filter(left_vs_right == "All Republican-supporting pages")
 
 # source("utils.R")
 ```
@@ -43,7 +43,7 @@ source("helpers.R")
 us_advertisers <- vroom::vroom("data/wtm-advertisers-us-2022-11-28T14_22_01.338Z.csv") %>%
   # count(entities.short_name, sort = T) %>%
   filter(entities.short_name %in% c("GOP", "Dems", "DemPACs", "RepPACs", "Con", "Prog")) %>%
-  mutate(left_vs_right = ifelse(entities.short_name %in% c("GOP", "Con", "RepPACs"), "All Pro-Republican Pages", "All Pro-Democrat Pages")) %>%
+  mutate(left_vs_right = ifelse(entities.short_name %in% c("GOP", "Con", "RepPACs"), "All Republican-supporting pages", "All Democrat-supporting pages")) %>%
   select(page_name = name, page_id = advertisers_platforms.advertiser_platform_ref, advertiser_type = entities.short_name, left_vs_right) %>%
   mutate(advertiser_type = case_when(
     advertiser_type == "Con" ~ "Conservatives (non-party, non-PACs)",
@@ -58,13 +58,24 @@ runoff <- readRDS("data/runoff7.rds")  %>%
   left_join(us_advertisers %>% mutate(internal_id = as.character(page_id))) %>%
   mutate(total_spend_formatted = readr::parse_number(total_spend_formatted)) %>%
   mutate(total_spend_formatted = ifelse(total_spend_formatted == 100, 1, total_spend_formatted)) %>%
-  mutate(total_spend = total_spend_formatted * total_spend_pct) 
+  mutate(total_spend = total_spend_formatted * total_spend_pct)  %>% 
+  mutate(page_name = case_when(
+    str_detect(page_name, "All Pro-Republican Pages") ~ "All Republican-supporting pages",
+        str_detect(page_name, "All Pro-Democrat Pages") ~ "All Democrat-supporting pages",
+    T ~ page_name
+  ))  
 
 runoff30 <- readRDS("data/runoff.rds")  %>%
   left_join(us_advertisers %>% mutate(internal_id = as.character(page_id))) %>%
   mutate(total_spend_formatted = readr::parse_number(total_spend_formatted)) %>%
   mutate(total_spend_formatted = ifelse(total_spend_formatted == 100, 1, total_spend_formatted)) %>%
-  mutate(total_spend = total_spend_formatted * total_spend_pct) 
+  mutate(total_spend = total_spend_formatted * total_spend_pct)    %>% 
+  mutate(page_name = case_when(
+    str_detect(page_name, "All Pro-Republican Pages") ~ "All Republican-supporting pages",
+        str_detect(page_name, "All Pro-Democrat Pages") ~ "All Democrat-supporting pages",
+    T ~ page_name
+  ))  
+
 
 ```
 
@@ -75,14 +86,10 @@ We coded over 3,000 US political advertisers during the 2022 midterm campaigns t
 
 To better understand the Georgia runoff election, we kept only advertisers who:
 
-1. Advertised in the last 7 days (Nov 25th - 1st December 2022)
-2. Advertised in the last 30 days (Nov 2nd - 1st December 2022) and spent money in Georgia.
+1. Advertised in the last 7 days (Nov 25th - Dec 1st 2022)
+2. Advertised in the last 30 days (Nov 2nd - Dec 1st 2022) and spent money in Georgia.
 
 > Note: Meta only provides 7, 30 and 90 days windows for the targeting data in their Ad Library. Meta's data also lags by a few days. We will update this report as soon as new data is available. 
-
-
-
-
 
 
 ## Topline statistics  {.tabset .tabset-fade .tabset-pills}
@@ -90,7 +97,7 @@ To better understand the Georgia runoff election, we kept only advertisers who:
 First, Democrat (Warnock)-supporting pages are clearly and consistently outspending Replubican (Walker)-supporting pages. Democrat-supporting pages have also run many more ads.
 
 
-### Nov 25th - 1st December 2022 (Last 7 Days)
+### Nov 25th - Dec 1st 2022 (Last 7 Days)
 
 ```{r}
 runoff %>% 
@@ -148,7 +155,7 @@ runoff %>%
   fmt_markdown(columns = everything())
 ```
 
-### Nov 2nd - 1st December 2022 (Last 30 Days)
+### Nov 2nd - Dec 1st 2022 (Last 30 Days)
 
 ```{r}
 runoff30 %>% 
@@ -215,16 +222,16 @@ How much did campaigns spend on different targeting methods?
 
 **Note that most advertisers spend the vast majority of their budget (~65%+) on Meta's Custom Audiences.**
 
-### Nov 25th - 1st December 2022 (Last 7 Days)
+### Nov 25th - Dec 1st 2022 (Last 7 Days)
 
 
 ```{r}
 
 pro_reps <- us_advertisers %>% 
-  filter(left_vs_right == "All Pro-Republican Pages")
+  filter(left_vs_right == "All Republican-supporting pages")
 
 pro_dems <- us_advertisers %>% 
-  filter(left_vs_right == "All Pro-Democrat Pages")
+  filter(left_vs_right == "All Democrat-supporting pages")
 
 
 runoff_spend_reps <- calculate_spend_on_each(runoff %>% filter(internal_id %in% pro_reps$page_id))
@@ -265,11 +272,11 @@ runoff_spend_reps %>%
   theme(legend.position = "bottom") +
   labs(x = "", y = "\nBudget spent on targeting method (% of Total spend)", caption = "Source: Meta Ad Library using data compiled by Who Targets Me. Data Viz: Fabio Votta (@favstats).")#,
        # title = "How much did campaigns spend on particular targeting methods?",
-       # subtitle = "Period: Nov 25th - 1st December 2022 (Last 7 Days)")
+       # subtitle = "Period: Nov 25th - Dec 1st 2022 (Last 7 Days)")
 
 ```
 
-### Nov 2nd - 1st December 2022 (Last 30 Days)
+### Nov 2nd - Dec 1st 2022 (Last 30 Days)
 
 ```{r}
 runoff30_spend_reps <- calculate_spend_on_each(runoff30 %>% filter(internal_id %in% pro_reps$page_id))
@@ -317,11 +324,16 @@ runoff30_spend_reps %>%
 
 Here, we show the *top most contested interest audiences*, i.e. where both Democrats and Republicans have spent considerable amounts of money competing to reach voters with the same interests.
 
-### Nov 25th - 1st December 2022 (Last 7 Days)
+### Nov 25th - Dec 1st 2022 (Last 7 Days)
 
 
 ```{r}
-interest_targeting <- readRDS("runoff7/interest_targeting.rds")
+interest_targeting <- readRDS("runoff7/interest_targeting.rds")   %>% 
+  mutate(page_name = case_when(
+    str_detect(page_name, "All Pro-Republican Pages") ~ "All Republican-supporting pages",
+        str_detect(page_name, "All Pro-Democrat Pages") ~ "All Democrat-supporting pages",
+    T ~ page_name
+  ))  
 
 ```
 
@@ -341,8 +353,7 @@ contested_dat <- interest_targeting %>%
 
 
 the_order <- contested_dat %>% 
-  filter(page_name == "All Republican-supporting pages") %>% 
-  arrange(desc(perc)) %>% 
+  filter(page_name == "All Republican-supporting pages") %>%   arrange(desc(perc)) %>% 
   pull(value) %>% 
   unique()
 
@@ -365,7 +376,7 @@ contested_dat %>%
   ggplot(aes(value, perc)) +
   geom_col(aes(fill = page_name), position = position_stack(), alpha = 0.8) +
   coord_flip() +
-  geom_label(aes(label = labb),y=1.2,
+  geom_label(aes(label = labb),y=1.225,
             position = position_stack(vjust = 0.5),
             hjust = 1, label.size = NA,
             size = 4) + expand_limits(y = 1.2) +
@@ -381,11 +392,17 @@ contested_dat %>%
 ```
 
 
-### Nov 2nd - 1st December 2022 (Last 30 Days)
+### Nov 2nd - Dec 1st 2022 (Last 30 Days)
 
 ```{r}
-interest_targeting30 <- readRDS("runoff/interest_targeting.rds")
+interest_targeting30 <- readRDS("runoff/interest_targeting.rds")   %>% 
+  mutate(page_name = case_when(
+    str_detect(page_name, "All Pro-Republican Pages") ~ "All Republican-supporting pages",
+        str_detect(page_name, "All Pro-Democrat Pages") ~ "All Democrat-supporting pages",
+    T ~ page_name
+  ))
 
+# interest_targeting30 %>% count(page_name, sort = T)
 ```
 
 ```{r}
@@ -404,15 +421,13 @@ contested_dat <- interest_targeting30 %>%
 
 
 the_order <- contested_dat %>% 
-  filter(page_name == "All Republican-supporting pages") %>% 
-  arrange(desc(perc)) %>% 
+  filter(page_name == "All Republican-supporting pages") %>%   arrange(desc(perc)) %>% 
   pull(value) %>% 
   unique()
 
 lab_dat <- contested_dat %>% 
   # distinct(value, .keep_all = T) %>% 
-  filter(page_name == "All Republican-supporting pages") %>% 
-  mutate(labb = paste0("$", scales::comma(round(total_spenderino)))) %>% 
+  filter(page_name == "All Republican-supporting pages") %>%   mutate(labb = paste0("$", scales::comma(round(total_spenderino)))) %>% 
   select(page_name, value, labb)
 
 
@@ -422,8 +437,9 @@ lab_dat <- contested_dat %>%
 contested_dat %>% 
   # mutate(the_order = )
   left_join(lab_dat) %>% 
-  mutate(value = factor(value, the_order)) %>% 
-  mutate(page_name = factor(page_name, c("All Republican-supporting pagess", "All Democrat-supporting pages"))) %>% 
+  mutate(value = factor(value, the_order))  %>% 
+  mutate(page_name = factor(page_name, c("All Republican-supporting pages", "All Democrat-supporting pages"))) %>% 
+  # count(page_name, sort  =T)
   # filter()
   ggplot(aes(value, perc)) +
   geom_col(aes(fill = page_name), position = position_stack(), alpha = 0.8) +
@@ -447,7 +463,7 @@ contested_dat %>%
 
 On Meta, advertisers can also **choose to exclude certain audiences from seeing their ads**. The graph below shows which audiences are being **excluded** and how much pages are paying for ads that exclude them. Interestingly, Democrat-supporting pages seem to both include and exclude likely conservative leaning audiences (*NASCAR*, *Hunting*). Pro-Republican pages exclude people interested in *Veganism* and *Toyota Prius*. 
 
-### Nov 25th - 1st December 2022 (Last 7 Days)
+### Nov 25th - Dec 1st 2022 (Last 7 Days)
 
 ```{r, fig.width=10}
 interest_targeting %>% 
@@ -470,7 +486,7 @@ interest_targeting %>%
 ```
 
 
-### Nov 2nd - 1st December 2022 (Last 30 Days)
+### Nov 2nd - Dec 1st 2022 (Last 30 Days)
 
 ```{r}
 
@@ -499,7 +515,7 @@ interest_targeting30 %>%
 
 Both Democrat-supporting and Republican-supporting pages **target voters in and around cities**, most notably Atlanta. 
 
-### Nov 25th - 1st December 2022 (Last 7 Days)  {.tabset .tabset-fade .tabset-pills}
+### Nov 25th - Dec 1st 2022 (Last 7 Days)  {.tabset .tabset-fade .tabset-pills}
 
 #### Democrat-supporting pages
 
@@ -509,7 +525,7 @@ Both Democrat-supporting and Republican-supporting pages **target voters in and 
 ```
 
 ```{r}
-aggregate_zips <- readRDS("runoff7/aggregate_zips.rds")
+aggregate_zips <- readRDS("runoff7/aggregate_zips.rds") 
 zip_data <- readRDS("runoff7/zip_data.rds")
 # shapename <- readRDS("data/statesdata/shapename.rds")
 shapename <- sf::read_sf('geocoders/cb_2020_us_zcta520_500k.shp')
@@ -542,7 +558,7 @@ create_geo_dat(aggregate_zips,
 ```
 
 
-### Nov 2nd - 1st December 2022 (Last 30 Days) {.tabset .tabset-fade .tabset-pills}
+### Nov 2nd - Dec 1st 2022 (Last 30 Days) {.tabset .tabset-fade .tabset-pills}
 
 #### Democrat-supporting pages
 
@@ -589,10 +605,20 @@ create_geo_dat(aggregate_zips30,
 
 **Democrat-supporting pages spend more money targeting ads at women** versus Republican-supporting pages, even factoring in their lower budget.
 
-### Nov 25th - 1st December 2022 (Last 7 Days)  
+### Nov 25th - Dec 1st 2022 (Last 7 Days)  
 
 ```{r}
-gender_targeting <- readRDS("runoff7/gender_targeting.rds")
+gender_targeting <- readRDS("runoff7/gender_targeting.rds")   %>% 
+  mutate(page_name = case_when(
+    str_detect(page_name, "All Pro-Republican Pages") ~ "All Republican-supporting pages",
+        str_detect(page_name, "All Pro-Democrat Pages") ~ "All Democrat-supporting pages",
+    T ~ page_name
+  ))    %>% 
+  mutate(left_vs_right = case_when(
+    str_detect(left_vs_right, "All Pro-Republican Pages") ~ "All Republican-supporting pages",
+        str_detect(left_vs_right, "All Pro-Democrat Pages") ~ "All Democrat-supporting pages",
+    T ~ left_vs_right
+  ))
 ```
 ```{r}
 gender_targeting %>%
@@ -609,11 +635,21 @@ gender_targeting %>%
 ```
 
 
-### Nov 2nd - 1st December 2022 (Last 30 Days) 
+### Nov 2nd - Dec 1st 2022 (Last 30 Days) 
 
 
 ```{r}
-gender_targeting30 <- readRDS("runoff/gender_targeting.rds")
+gender_targeting30 <- readRDS("runoff/gender_targeting.rds") %>% 
+  mutate(page_name = case_when(
+    str_detect(page_name, "All Pro-Republican Pages") ~ "All Republican-supporting pages",
+        str_detect(page_name, "All Pro-Democrat Pages") ~ "All Democrat-supporting pages",
+    T ~ page_name
+  ))    %>% 
+  mutate(left_vs_right = case_when(
+    str_detect(left_vs_right, "All Pro-Republican Pages") ~ "All Republican-supporting pages",
+        str_detect(left_vs_right, "All Pro-Democrat Pages") ~ "All Democrat-supporting pages",
+    T ~ left_vs_right
+  ))
 ```
 ```{r}
 gender_targeting30 %>%
@@ -634,10 +670,20 @@ gender_targeting30 %>%
 Both Democrat and Republican ads spent most money on ads targeted at English-speakers. Democratic pages targeted spanish-speaking voters at a much higher rate.
 
 
-### Nov 25th - 1st December 2022 (Last 7 Days)  
+### Nov 25th - Dec 1st 2022 (Last 7 Days)  
 
 ```{r}
-language_targeting <- readRDS("runoff7/language_targeting.rds")
+language_targeting <- readRDS("runoff7/language_targeting.rds") %>% 
+  mutate(page_name = case_when(
+    str_detect(page_name, "All Pro-Republican Pages") ~ "All Republican-supporting pages",
+        str_detect(page_name, "All Pro-Democrat Pages") ~ "All Democrat-supporting pages",
+    T ~ page_name
+  ))    %>% 
+  mutate(left_vs_right = case_when(
+    str_detect(left_vs_right, "All Pro-Republican Pages") ~ "All Republican-supporting pages",
+        str_detect(left_vs_right, "All Pro-Democrat Pages") ~ "All Democrat-supporting pages",
+    T ~ left_vs_right
+  ))
 ```
 
 ```{r}
@@ -655,11 +701,21 @@ language_targeting %>%
   geom_text(aes(y = total_spend + 1000, label = paste0("$", scales::comma(round(total_spend)))), position = position_dodge(width = 0.9))
 ```
 
-### Nov 2nd - 1st December 2022 (Last 30 Days) 
+### Nov 2nd - Dec 1st 2022 (Last 30 Days) 
 
 
 ```{r}
-language_targeting30 <- readRDS("runoff/language_targeting.rds")
+language_targeting30 <- readRDS("runoff/language_targeting.rds")  %>% 
+  mutate(page_name = case_when(
+    str_detect(page_name, "All Pro-Republican Pages") ~ "All Republican-supporting pages",
+        str_detect(page_name, "All Pro-Democrat Pages") ~ "All Democrat-supporting pages",
+    T ~ page_name
+  ))  %>% 
+  mutate(left_vs_right = case_when(
+    str_detect(left_vs_right, "All Pro-Republican Pages") ~ "All Republican-supporting pages",
+        str_detect(left_vs_right, "All Pro-Democrat Pages") ~ "All Democrat-supporting pages",
+    T ~ left_vs_right
+  ))
 ```
 
 ```{r}
