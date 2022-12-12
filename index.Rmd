@@ -402,7 +402,7 @@ lab_dat <- contested_dat %>%
 
 ```
 
-```{r, fig.height=10}
+```{r, fig.width  = 10, fig.height=10}
 contested_dat %>% 
   # mutate(the_order = )
   left_join(lab_dat) %>% 
@@ -470,7 +470,7 @@ lab_dat <- contested_dat %>%
 
 ```
 
-```{r, fig.height=12}
+```{r, fig.width  = 8, fig.height=8}
 contested_dat %>% 
   # mutate(the_order = )
   left_join(lab_dat) %>% 
@@ -503,7 +503,7 @@ On Meta, advertisers can also **choose to exclude certain audiences from seeing 
 
 ### Nov 30th - Dec 6th 2022 (Last 7 Days)
 
-```{r, fig.width=10}
+```{r, fig.height=6, fig.width=10}
 interest_targeting %>% 
   filter(is_exclusion) %>% 
   filter(is.na(page_id)) %>% 
@@ -519,18 +519,19 @@ interest_targeting %>%
   geom_col() +
   facet_wrap(~page_name, scales = "free") +
   coord_flip()  +
-  scale_fill_manual("Page Groups", values = c("#ff2700", "#008fd5")) +
+  scale_fill_manual("Page Groups", values = c("#008fd5", "#ff2700")) +
   ggthemes::theme_hc() +
   theme(legend.position = "none") +
   scale_y_continuous(labels = scales::comma) +
   labs(x = "Interest Exlcusion", y = "\nTotal spent on ads that exclude audience (in $)", 
-       caption = "Source: Meta Ad Library and data compiled by Who Targets Me. Data Viz: Fabio Votta (@favstats).") 
+       caption = "Source: Meta Ad Library and data compiled by Who Targets Me. Data Viz: Fabio Votta (@favstats).") +
+	scale_y_continuous(labels = scales::label_number(suffix = "k", scale = 1e-3)) 
 ```
 
 
 ### Nov 7th - Dec 6th 2022 (Last 30 Days)
 
-```{r}
+```{r, fig.height=6, fig.width=10}
 # print(interest_targeting30 %>% 
 #   filter(is_exclusion) %>% 
 #   filter(is.na(page_id)))
@@ -550,7 +551,7 @@ interest_targeting30 %>%
   geom_col() +
   facet_wrap(~page_name, scales = "free") +
   coord_flip()  +
-  scale_fill_manual("Page Groups", values = c("#ff2700", "#008fd5")) +
+  scale_fill_manual("Page Groups", values = c("#008fd5", "#ff2700")) +
   ggthemes::theme_hc() +
   theme(legend.position = "none") +
   scale_y_continuous(labels = scales::comma) +
@@ -669,7 +670,7 @@ gender_targeting <- readRDS("runoff7/gender_targeting.rds")   %>%
     T ~ left_vs_right
   ))
 
-# gender_targeting %>% 
+# gender_targeting %>%
 #   arrange(desc(total_spend))
 ```
 ```{r}
@@ -683,7 +684,8 @@ gender_targeting %>%
   ggthemes::theme_hc() +
   labs(x = "Targeting criteria", y = "Amount spent on targeting by gender", #title = "Most Contested Target Audiences in US 2022 Midterms", subtitle = " ", 
        caption = "Source: Meta Ad Library and data compiled by Who Targets Me. Data Viz: Fabio Votta (@favstats).") +
-  geom_text(aes(y = total_spend + 1000, label = paste0("$", scales::comma(round(total_spend)))), position = position_dodge(width = 0.9))
+  geom_text(aes(y = total_spend + 1000, label = paste0("$", scales::comma(round(total_spend)))), position = position_dodge(width = 0.9)) +
+  scale_y_continuous(labels= scales::comma)
 ```
 
 
@@ -714,7 +716,8 @@ gender_targeting30 %>%
   ggthemes::theme_hc() +
   labs(x = "", y = "Amount spent on targeting by gender", #title = "Most Contested Target Audiences in US 2022 Midterms", subtitle = " ", 
        caption = "Source: Meta Ad Library and data compiled by Who Targets Me. Data Viz: Fabio Votta (@favstats).") +
-  geom_text(aes(y = total_spend + 20000, label = paste0("$", scales::comma(round(total_spend)))), position = position_dodge(width = 0.9))
+  geom_text(aes(y = total_spend + 20000, label = paste0("$", scales::comma(round(total_spend)))), position = position_dodge(width = 0.9))  +
+  scale_y_continuous(labels= scales::comma)
 ```
 
 ## Language Targeting {.tabset .tabset-fade .tabset-pills}
@@ -750,7 +753,8 @@ language_targeting %>%
   ggthemes::theme_hc() +
   labs(x = "", y = "Total spent targeting by language", #title = "Most Contested Target Audiences in US 2022 Midterms", subtitle = " ", 
        caption = "Source: Meta Ad Library and data compiled by Who Targets Me. Data Viz: Fabio Votta (@favstats).") +
-  geom_text(aes(y = total_spend + 2000, label = paste0("$", scales::comma(round(total_spend)))), position = position_dodge(width = 0.9))
+  geom_text(aes(y = total_spend + 2000, label = paste0("$", scales::comma(round(total_spend)))), position = position_dodge(width = 0.9))  +
+  scale_y_continuous(labels= scales::comma)
 ```
 
 ### Nov 7th - Dec 6th 2022 (Last 30 Days) 
@@ -782,7 +786,8 @@ language_targeting30 %>%
   ggthemes::theme_hc() +
   labs(x = "", y = "Total spent targeting by language", #title = "Most Contested Target Audiences in US 2022 Midterms", subtitle = " ", 
        caption = "Source: Meta Ad Library and data compiled by Who Targets Me. Data Viz: Fabio Votta (@favstats).") +
-  geom_text(aes(y = total_spend + 15000, label = paste0("$", scales::comma(round(total_spend)))), position = position_dodge(width = 0.9))
+  geom_text(aes(y = total_spend + 15000, label = paste0("$", scales::comma(round(total_spend)))), position = position_dodge(width = 0.9))  +
+  scale_y_continuous(labels= scales::comma)
 ```
 
 
